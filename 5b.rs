@@ -1,50 +1,44 @@
-use std::collections::HashSet;
-
 fn main() {
-    let mut i = 0;
     let lines: Vec<Result<String, std::io::Error>> = std::io::stdin().lines().collect();
     let mut cur: Vec<(i64, i64)> = Vec::new();
     let mut next: Vec<(i64, i64)> = Vec::new();
-    let l0 = lines[0].as_ref().unwrap().clone();
-    let line0: Vec<&str> = l0.split_whitespace().skip(1).collect();
-    for i in 0..line0.len()/2 {
-        let beg: i64 = line0[2*i].parse().unwrap();
-        let len: i64 = line0[2*i+1].parse().unwrap();
+    let line0 = lines[0].as_ref().unwrap();
+    let toks0: Vec<&str> = line0.split_whitespace().skip(1).collect();
+    for i in 0..toks0.len()/2 {
+        let beg: i64 = toks0[2*i].parse().unwrap();
+        let len: i64 = toks0[2*i+1].parse().unwrap();
         cur.push((beg, beg+len));
     }
-    println!("{:?}", cur);
     for rline in lines.iter().skip(2) {
         let line = rline.as_ref().unwrap();
-        println!("{:?}", line);
         if line.is_empty() {
-            next.extend(cur);
-            cur = next.clone();
-            next.clear();
             continue;
         }
         if line.contains(':') {
+            next.extend(&cur);
+            std::mem::swap(&mut cur, &mut next);
+            next.clear();
             continue;
         }
         let toks: Vec<&str> = line.split_whitespace().collect();
-        // println!("{:?}", toks);
-        let to_start: i64 = toks[0].parse().unwrap();
-        let from_start: i64 = toks[1].parse().unwrap();
+        let next_start: i64 = toks[0].parse().unwrap();
+        let cur_start: i64 = toks[1].parse().unwrap();
         let len: i64 = toks[2].parse().unwrap();
         for i in 0..cur.len() {
-            let overlap_beg = std::cmp::max(from_start, cur[i].0);
-            let overlap_end = std::cmp::min(from_start + len, cur[i].1);
-            if overlap_beg < overlap_end {
-                let delta = overlap_beg - from_start;
-                next.push((to_start + delta, to_start + delta + (overlap_end - overlap_beg)));
+            let overlap_beg = std::cmp::max(cur_start, cur[i].0);
+            let overlap_end = std::cmp::min(cur_start + len, cur[i].1);
+            let overlap_len = overlap_end - overlap_beg;
+            if overlap_len > 0 {
+                let delta = overlap_beg - cur_start;
+                next.push((next_start + delta, next_start + delta + overlap_len));
                 cur.push((overlap_end, cur[i].1));
                 cur[i] = (cur[i].0, overlap_beg);
             }
         }
-        println!("cur {:?}", cur);
-        println!("nxt {:?}", next);
     }
+    next.extend(&cur);
     let mut minf = 5_000_000_000;
-    for (beg, end) in cur {
+    for (beg, end) in next {
         if beg < end && beg < minf {
             minf = beg;
         }
